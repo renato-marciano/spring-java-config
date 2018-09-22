@@ -8,9 +8,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.jms.*;
 
-import static com.renato.SpringIntegrationConfig.BROKER_URL;
-import static com.renato.SpringIntegrationConfig.INBOUND_QUEUE;
-import static com.renato.SpringIntegrationConfig.OUTPUT_QUEUE;
+import static com.renato.config.SpringIntegrationConfig.*;
+import static com.renato.service.BadMessageValidator.BAD_MESSAGE;
+import static com.renato.service.ErrorService.EXCEPTION_WAS_HANDLED;
+import static com.renato.service.ErrorService.OUTPUT_ERROR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -18,28 +19,40 @@ import static org.junit.Assert.assertNotNull;
 @SpringBootTest
 public class SimpleJmsITest {
 
-    private static final int TIME_TO_WAIT_IN_MS = 3000;
+    private static final int TIME_TO_WAIT_IN_MS = 5000;
+
 
     @Test
-    public void consumeMessage_Within3Seconds_WhenMessageIsPublished() throws JMSException {
+    public void messageIsConsumed_WhenMessageIsGood() throws JMSException {
         String expectedMessage = "arbitrary message";
         Session session = createSession();
 
         sendMessage(expectedMessage, session);
 
-        TextMessage textMsg = retrieveSentMessage(session);
+        TextMessage textMsg = retrieveSentMessageFromOutputQueue(session);
 
         assertNotNull(textMsg);
         assertEquals(expectedMessage,textMsg.getText());
+    }
+
+    @Test
+    public void handleException_WhenMessageIsBad() throws JMSException{
+        Session session = createSession();
+
+        sendMessage(BAD_MESSAGE, session);
+
+        TextMessage textMsg = retrieveSentMessageFromErrorQueue(session);
+
+        assertNotNull(textMsg);
+        assertEquals(EXCEPTION_WAS_HANDLED,textMsg.getText());
+
     }
 
     private Session createSession() throws JMSException {
         ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_URL);
         Connection connection = connectionFactory.createConnection();
         connection.start();
-
-        boolean isTransacted = false;
-        return connection.createSession(isTransacted, Session.AUTO_ACKNOWLEDGE);
+        return connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     }
 
     private void sendMessage(String expectedMessage, Session session) throws JMSException {
@@ -49,10 +62,20 @@ public class SimpleJmsITest {
         messageProducer.send(msg);
     }
 
-    private TextMessage retrieveSentMessage(Session session) throws JMSException {
-        Queue outboundQueue = session.createQueue(OUTPUT_QUEUE);
+    private TextMessage retrieveSentMessageFromOutputQueue(Session session) throws JMSException {
+        return retrieveSentMessageFromQueue(session,OUTPUT_QUEUE);
+
+    }
+
+    private TextMessage retrieveSentMessageFromErrorQueue(Session session) throws JMSException {
+        return retrieveSentMessageFromQueue(session,OUTPUT_ERROR);
+    }
+
+    private TextMessage retrieveSentMessageFromQueue(Session session, String queue) throws JMSException {
+        Queue outboundQueue = session.createQueue(queue);
         MessageConsumer messageConsumer = session.createConsumer(outboundQueue);
         return (TextMessage) messageConsumer.receive(TIME_TO_WAIT_IN_MS);
     }
+
 
 }
