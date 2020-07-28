@@ -1,1 +1,18 @@
 
+# action.yml
+name: 'pristine'
+author: 'Microsoft CSE'
+description: 'Check PRs commit history'
+# inputs:
+#   who-to-greet:  # id of input
+#     description: 'Who to greet'
+#     required: true
+#     default: 'World'
+# outputs:
+#   time: # id of output
+#     description: 'The time we greeted you'
+runs:
+  using: 'docker'
+  image: 'pristine2020/pristine-action'
+  # args:
+  #   - ${{ inputs.who-to-greet }}
