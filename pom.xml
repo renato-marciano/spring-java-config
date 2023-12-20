@@ -12,7 +12,7 @@
         <maven.compiler.source>9</maven.compiler.source>
         <maven.compiler.target>9</maven.compiler.target>
         <activemq.version>5.15.6</activemq.version>
-        <activemq-broker.version>5.9.0</activemq-broker.version>
+        <activemq-broker.version>5.10.2</activemq-broker.version>
     </properties>
 
     <parent>
